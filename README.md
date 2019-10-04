@@ -1,2 +1,10 @@
 # getRadioList
-get a list of stations by searching http://www.radio-browser.info/webservice
+get a list of radio stations by searching http://www.radio-browser.info/webservice
+
+### Credits: 
+André P. Santos (andreztz) for pyradios
+https://github.com/andreztz/pyradios
+
+radio-browser
+http://www.radio-browser.info/webservice
+
