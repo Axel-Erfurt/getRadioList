@@ -6,6 +6,7 @@ made in October 2019 by Axel Schneider
 https://github.com/Axel-Erfurt/
 Credits: André P. Santos (andreztz) for pyradios
 https://github.com/andreztz/pyradios
+Copyright (c) 2018 André P. Santos
 radio-browser
 http://www.radio-browser.info/webservice
 """
