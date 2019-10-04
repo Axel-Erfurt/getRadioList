@@ -8,3 +8,4 @@ https://github.com/andreztz/pyradios
 radio-browser
 http://www.radio-browser.info/webservice
 
+![alt screenshot](https://github.com/Axel-Erfurt/getRadioList/blob/master/screenshot.png)
