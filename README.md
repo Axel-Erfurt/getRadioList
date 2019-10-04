@@ -1,6 +1,10 @@
 # getRadioList
 get a list of radio stations by searching http://www.radio-browser.info/webservice
 
+### Requirements:
+- python3
+- PyQt5
+
 ### Credits: 
 André P. Santos (andreztz) for pyradios
 https://github.com/andreztz/pyradios
