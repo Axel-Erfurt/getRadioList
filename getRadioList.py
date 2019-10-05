@@ -11,10 +11,13 @@ radio-browser
 http://www.radio-browser.info/webservice
 """
 ##############
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QPushButton, QFileDialog
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, 
+                                                            QPushButton, QFileDialog, QAction, QMenu, QMessageBox)
+from PyQt5.QtGui import QIcon, QTextCursor
+from PyQt5.QtCore import Qt, QUrl
 from radios import RadioBrowser
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from urllib import request
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -28,6 +31,9 @@ class MainWindow(QMainWindow):
         self.findfield.setPlaceholderText("type search term and press RETURN ")
         self.findfield.returnPressed.connect(self.findStations)
         self.field = QPlainTextEdit()
+        self.field.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.field.customContextMenuRequested.connect(self.contextMenuRequested)
+        ### toolbar ###
         self.tb = self.addToolBar("tools")
         self.tb.setContextMenuPolicy(Qt.PreventContextMenu)
         self.tb.setMovable(False)
@@ -46,7 +52,71 @@ class MainWindow(QMainWindow):
         self.tb.addWidget(self.findfield)
         self.tb.addWidget(self.saveButton)
         self.tb.addWidget(self.savePlaylistButton)
+        ### player ###
+        self.player = QMediaPlayer()
+        ## actions
+        self.getLineAction = QAction("play Station", self, shortcut="F6", triggered=self.getLine)
+        self.addAction(self.getLineAction)
+        self.stopPlayerAction = QAction("stop playing", self, shortcut="F7", triggered=self.stopPlayer)
+        self.addAction(self.stopPlayerAction)
+        self.helpAction = QAction("Help", self, shortcut="F1", triggered=self.showHelp)
+        self.addAction(self.helpAction)
         self.statusBar().showMessage("Welcome", 0)
+
+    def showHelp(self):
+        QMessageBox.information(self, "Information", "F6 -> play Station (from line where cursor is)\nF7 -> stop playing")
+
+    def stopPlayer(self):
+        self.player.stop()
+        self.statusBar().showMessage("Player stopped", 0)
+
+    ### QPlainTextEdit contextMenu
+    def contextMenuRequested(self, point):
+        cmenu = QMenu()
+        cmenu = self.field.createStandardContextMenu()
+        cmenu.addSeparator()
+        cmenu.addAction(self.getLineAction)
+        cmenu.addAction(self.stopPlayerAction)
+        cmenu.addSeparator()
+        cmenu.addAction(self.helpAction)
+        cmenu.exec_(self.field.mapToGlobal(point))  
+
+    def getLine(self):
+        url = ""
+        tc = self.field.textCursor()
+        tc.select(QTextCursor.BlockUnderCursor)
+        rtext = tc.selectedText().partition(",")[2]
+        stext = tc.selectedText().partition(",")[0]
+        print(rtext)
+        if rtext.endswith(".pls") :
+            url = self.getURLfromPLS(rtext)
+        elif rtext.endswith(".m3u") :
+            url = self.getURLfromM3U(rtext)
+        else:
+            url = rtext
+        self.player.setMedia(QMediaContent(QUrl(url)))
+        self.player.play()
+        self.statusBar().showMessage("%s %s" % ("playing", stext), 0)
+
+    def getURLfromPLS(self, inURL):
+        response = request.urlopen(inURL)
+        html = response.read().splitlines()
+        
+        t = str(html[1])
+        url = t.partition("=")[2].partition("'")[0]
+#        print(url)
+        return (url)
+
+    def getURLfromM3U(self, inURL):
+        response = request.urlopen(inURL)
+        html = response.read().splitlines()
+        if len(html) > 1:
+            t = str(html[1])
+        else:
+            t = str(html[0])
+        url = t.partition("'")[2].partition("'")[0]
+        print(url)
+        return (url)
 
     def findStations(self):
         self.field.setPlainText("")
@@ -116,3 +186,4 @@ if __name__ == '__main__':
     mainWin.show()
     mainWin.findfield.setFocus()
     sys.exit(app.exec_())
+    
