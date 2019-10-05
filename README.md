@@ -1,6 +1,12 @@
 # getRadioList
 get a list of radio stations by searching http://www.radio-browser.info/webservice
 
+- added playing
+
+F6 -> play Station from line where cursor is
+
+F7 -> stop playing
+
 ### Requirements:
 - python3
 - PyQt5
