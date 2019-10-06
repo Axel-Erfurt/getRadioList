@@ -7,6 +7,8 @@ F6 -> play Station from line where cursor is
 
 F7 -> stop playing
 
+see context menu for more
+
 ### Requirements:
 - python3
 - PyQt5
