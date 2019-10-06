@@ -17,6 +17,7 @@ from PyQt5.QtGui import QIcon, QTextCursor
 from PyQt5.QtCore import Qt, QUrl
 from radios import RadioBrowser
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+#from PyQt5.Qt import QClipboard
 from urllib import request
 
 class MainWindow(QMainWindow):
@@ -33,6 +34,7 @@ class MainWindow(QMainWindow):
         self.field = QPlainTextEdit()
         self.field.setContextMenuPolicy(Qt.CustomContextMenu)
         self.field.customContextMenuRequested.connect(self.contextMenuRequested)
+        self.field.cursorPositionChanged.connect(self.selectLine)
         ### toolbar ###
         self.tb = self.addToolBar("tools")
         self.tb.setContextMenuPolicy(Qt.PreventContextMenu)
@@ -54,14 +56,48 @@ class MainWindow(QMainWindow):
         self.tb.addWidget(self.savePlaylistButton)
         ### player ###
         self.player = QMediaPlayer()
+        self.player.metaDataChanged.connect(self.metaDataChanged)
+        self.startButton = QPushButton("Play")
+        self.startButton.setIcon(QIcon.fromTheme("media-playback-start"))
+        self.startButton.clicked.connect(self.getURLtoPlay)
+        self.stopButton = QPushButton("Stop")
+        self.stopButton.setIcon(QIcon.fromTheme("media-playback-stop"))
+        self.stopButton.clicked.connect(self.stopPlayer)
+        self.statusBar().addPermanentWidget(self.startButton)
+        self.statusBar().addPermanentWidget(self.stopButton)
         ## actions
-        self.getLineAction = QAction("play Station", self, shortcut="F6", triggered=self.getLine)
-        self.addAction(self.getLineAction)
-        self.stopPlayerAction = QAction("stop playing", self, shortcut="F7", triggered=self.stopPlayer)
+        self.getNameAction = QAction(QIcon.fromTheme("edit-copy"), "copy Station Name", self, triggered=self.getName)
+        self.getUrlAction = QAction(QIcon.fromTheme("edit-copy"), "copy Station URL", self, triggered=self.getURL)
+        self.getNameAndUrlAction = QAction(QIcon.fromTheme("edit-copy"), "copy Station Name,URL", self, triggered=self.getNameAndUrl)
+        self.getURLtoPlayAction = QAction(QIcon.fromTheme("media-playback-start"), "play Station", self, shortcut="F6", triggered=self.getURLtoPlay)
+        self.addAction(self.getURLtoPlayAction)
+        self.stopPlayerAction = QAction(QIcon.fromTheme("media-playback-stop"), "stop playing", self, shortcut="F7", triggered=self.stopPlayer)
         self.addAction(self.stopPlayerAction)
-        self.helpAction = QAction("Help", self, shortcut="F1", triggered=self.showHelp)
+        self.helpAction = QAction(QIcon.fromTheme("help-info"), "Help", self, shortcut="F1", triggered=self.showHelp)
         self.addAction(self.helpAction)
         self.statusBar().showMessage("Welcome", 0)
+
+    def getName(self):
+        t = self.field.textCursor().selectedText().partition(",")[0]
+        clip = QApplication.clipboard()
+        clip.setText(t)
+
+    def getURL(self):
+        t = self.field.textCursor().selectedText().partition(",")[2]
+        clip = QApplication.clipboard()
+        clip.setText(t)
+
+    def getNameAndUrl(self):
+        t = self.field.textCursor().selectedText()
+        clip = QApplication.clipboard()
+        clip.setText(t)
+        
+    def selectLine(self):
+        tc = self.field.textCursor()
+        tc.select(QTextCursor.BlockUnderCursor)
+        tc.movePosition(QTextCursor.StartOfLine, QTextCursor.MoveAnchor) ##, 
+        tc.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
+        self.field.setTextCursor(tc)
 
     def showHelp(self):
         QMessageBox.information(self, "Information", "F6 -> play Station (from line where cursor is)\nF7 -> stop playing")
@@ -73,18 +109,22 @@ class MainWindow(QMainWindow):
     ### QPlainTextEdit contextMenu
     def contextMenuRequested(self, point):
         cmenu = QMenu()
-        cmenu = self.field.createStandardContextMenu()
-        cmenu.addSeparator()
-        cmenu.addAction(self.getLineAction)
-        cmenu.addAction(self.stopPlayerAction)
-        cmenu.addSeparator()
-        cmenu.addAction(self.helpAction)
+#        cmenu = self.field.createStandardContextMenu()
+        if not self.field.toPlainText() == "":
+#            cmenu.addSeparator()
+            cmenu.addAction(self.getNameAction)
+            cmenu.addAction(self.getUrlAction)
+            cmenu.addAction(self.getNameAndUrlAction)
+            cmenu.addSeparator()
+            cmenu.addAction(self.getURLtoPlayAction)
+            cmenu.addAction(self.stopPlayerAction)
+            cmenu.addSeparator()
+            cmenu.addAction(self.helpAction)
         cmenu.exec_(self.field.mapToGlobal(point))  
 
-    def getLine(self):
+    def getURLtoPlay(self):
         url = ""
         tc = self.field.textCursor()
-        tc.select(QTextCursor.BlockUnderCursor)
         rtext = tc.selectedText().partition(",")[2]
         stext = tc.selectedText().partition(",")[0]
         print(rtext)
@@ -98,20 +138,45 @@ class MainWindow(QMainWindow):
         self.player.play()
         self.statusBar().showMessage("%s %s" % ("playing", stext), 0)
 
+    def metaDataChanged(self):
+        if self.player.isMetaDataAvailable():
+            trackInfo = (self.player.metaData("Title"))
+            trackInfo2 = (self.player.metaData("Comment"))
+            if not trackInfo == None:
+                self.statusBar().showMessage(trackInfo, 0)
+                if not trackInfo2 == None:
+                   self.statusBar().showMessage("%s %s" % (trackInfo, trackInfo2))
+
     def getURLfromPLS(self, inURL):
         response = request.urlopen(inURL)
-        html = response.read().splitlines()
-        
-        t = str(html[1])
+        html = response.read().decode("utf-8").splitlines()
+        print(html)
+        if len(html) > 3:
+            if "http" in str(html[1]):
+                t = str(html[1])
+            elif "http" in str(html[2]):
+                t = str(html[2])
+            elif "http" in str(html[3]):
+                t = str(html[3])
+        elif len(html) > 2:
+            if "http" in str(html[1]):
+                t = str(html[1])
+            elif "http" in str(html[2]):
+                t = str(html[2])
+        else:
+            t = str(html[0])
         url = t.partition("=")[2].partition("'")[0]
-#        print(url)
+        print(url)
         return (url)
 
     def getURLfromM3U(self, inURL):
         response = request.urlopen(inURL)
         html = response.read().splitlines()
         if len(html) > 1:
-            t = str(html[1])
+            if "http" in str(html[1]):
+                t = str(html[1])
+            else:
+                t = str(html[0])
         else:
             t = str(html[0])
         url = t.partition("'")[2].partition("'")[0]
