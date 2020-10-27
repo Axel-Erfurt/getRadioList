@@ -14,8 +14,7 @@ see context menu for more
 - PyQt5
 
 ### Credits: 
-André P. Santos (andreztz) for pyradios
-https://github.com/andreztz/pyradios
+André P. Santos (andreztz) for [pyradios](https://github.com/andreztz/pyradios)
 
 radio-browser
 http://www.radio-browser.info/gui/
