@@ -1,5 +1,5 @@
 # getRadioList
-get a list of radio stations by searching http://www.radio-browser.info/webservice
+get a list of radio stations by searching [radio-browser](http://www.radio-browser.info/gui/)
 
 - added playing
 
@@ -18,6 +18,6 @@ André P. Santos (andreztz) for pyradios
 https://github.com/andreztz/pyradios
 
 radio-browser
-http://www.radio-browser.info/webservice
+http://www.radio-browser.info/gui/
 
 ![alt screenshot](https://github.com/Axel-Erfurt/getRadioList/blob/master/screenshot.png)
