@@ -8,7 +8,7 @@ Credits: André P. Santos (andreztz) for pyradios
 https://github.com/andreztz/pyradios
 Copyright (c) 2018 André P. Santos
 radio-browser
-http://www.radio-browser.info/webservice
+http://www.radio-browser.info/gui/#!/api
 """
 ##############
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QComboBox, 
@@ -19,8 +19,9 @@ from radios import RadioBrowser
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 #from PyQt5.Qt import QClipboard
 from urllib import request
+import requests
 
-genres ="""Americana
+genres ="""Acoustic
 Bluegrass 
 Country
 New Country
@@ -31,11 +32,11 @@ Folk
 Folk Rock
 Grunge
 Hard Rock
-Classic Rock
 Blues
 Oldies
 Pop
 Rock
+Classic Rock
 Classic
 Beat
 Metal
@@ -46,6 +47,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.setGeometry(0, 0, 700, 400)
         self.setContentsMargins(6, 6, 6, 6)
+        self.setStyleSheet(myStyleSheet(self))
         self.setWindowTitle("Radio Stations - searching with pyradios")
         self.genreList = genres.splitlines()
         self.findfield = QLineEdit()
@@ -53,6 +55,7 @@ class MainWindow(QMainWindow):
         self.findfield.addAction(QIcon.fromTheme("edit-find"), 0)
         self.findfield.setPlaceholderText("type search term and press RETURN ")
         self.findfield.returnPressed.connect(self.findStations)
+        self.findfield.setClearButtonEnabled(True)
         self.field = QPlainTextEdit()
         self.field.setContextMenuPolicy(Qt.CustomContextMenu)
         self.field.customContextMenuRequested.connect(self.contextMenuRequested)
@@ -71,10 +74,10 @@ class MainWindow(QMainWindow):
         self.tb.setContextMenuPolicy(Qt.PreventContextMenu)
         self.tb.setMovable(False)
 #        self.tb.setContentMargins(0, #0, 0, 6)
-        self.setStyleSheet("QPlainTextEdit {background: #e9e9e9; font-size: 8pt; border: 1px outset #babdb6;} \
-                                                                   QStatusBar { background: transparent; color: #888a85; border: 0px; font-size: 8pt;}QToolBar \
-                                                                    {background: transparent; border: 0px;} QPushButton{background: #d3d7cf; \
-                                                                            font-size: 8pt;} QLineEdit{background: #eeeeec; font-size: 8pt;}")
+        #self.setStyleSheet("QPlainTextEdit {background: #e9e9e9; font-size: 8pt; border: 1px outset #babdb6;} \
+        #                                                           QStatusBar { background: transparent; color: #888a85; border: 0px; font-size: 8pt;}QToolBar \
+        #                                                            {background: transparent; border: 0px;} QPushButton{background: #d3d7cf; \
+        #                                                                    font-size: 8pt;} QLineEdit{background: #eeeeec; font-size: 8pt;}")
         self.saveButton = QPushButton("Save as txt")
         self.saveButton.setIcon(QIcon.fromTheme("document-save"))
         self.saveButton.clicked.connect(self.saveStations)
@@ -170,6 +173,8 @@ class MainWindow(QMainWindow):
             url = self.getURLfromPLS(rtext)
         elif rtext.endswith(".m3u") :
             url = self.getURLfromM3U(rtext)
+        elif rtext.endswith(".m3u8") :
+            url = self.getURLfromM3U(rtext)
         else:
             url = rtext
         print("stream url=", url)
@@ -187,46 +192,30 @@ class MainWindow(QMainWindow):
                    self.statusBar().showMessage("%s %s" % (trackInfo, trackInfo2))
 
     def getURLfromPLS(self, inURL):
-        if "&" in inURL:
-            inURL = inURL.partition("&")[0]
-        response = request.urlopen(inURL)
-        html = response.read().decode("utf-8").splitlines()
-        #print(html)
-        if len(html) > 3:
-            if "http" in str(html[1]):
-                t = str(html[1])
-            elif "http" in str(html[2]):
-                t = str(html[2])
-            elif "http" in str(html[3]):
-                t = str(html[3])
-        elif len(html) > 2:
-            if "http" in str(html[1]):
-                t = str(html[1])
-            elif "http" in str(html[2]):
-                t = str(html[2])
-        else:
-            t = str(html[0])
-        url = t.partition("=")[2].partition("'")[0]
-#        print(url)
-        return (url)
+        response = requests.get(inURL)
+        html = response.text.replace("https", "http").splitlines()
+        playlist = []
+
+        for line in html:
+
+            if line.startswith("File") == True:
+                    list = line.split("=", 1)
+                    playlist.append(list[1])
+
+        print("URL:", playlist[0])
+        return(playlist[0])
 
     def getURLfromM3U(self, inURL):
-        if "?u=" in inURL:
-            inURL = inURL.partition("?u=")[2]
-        if "&" in inURL:
-            inURL = inURL.partition("&")[0]
-        response = request.urlopen(inURL)
-        html = response.read().splitlines()
-        if len(html) > 1:
-            if "http" in str(html[1]):
-                t = str(html[1])
-            else:
-                t = str(html[0])
-        else:
-            t = str(html[0])
-        url = t.partition("'")[2].partition("'")[0]
-#        print(url)
-        return (url)
+        response = requests.get(inURL)
+        html = response.text.replace("https", "http").splitlines()
+        playlist = []
+
+        for line in html:
+            if not line.startswith("#") and len(line) > 0 and line.startswith("http"):
+                playlist.append(line)
+
+        print("URL:", playlist[0])
+        return(playlist[0])
 
     def findStations(self):
         self.field.setPlainText("")
@@ -288,6 +277,46 @@ class MainWindow(QMainWindow):
                     f.write(result)
                     f.close()
                     self.statusBar().showMessage("saved!", 0)
+
+def myStyleSheet(self):
+    return """
+QPlainTextEdit
+{
+background: #eeeeec;
+color: #202020;
+}
+QStatusBar
+{
+font-size: 8pt;
+color: #555753;
+}
+QMenuBar
+{
+background: transparent;
+border: 0px;
+}
+QToolBar
+{
+background: transparent;
+border: 0px;
+}
+QMainWindow
+{
+     background: qlineargradient(y1: 0, y2: 1,
+                                 stop: 0 #E1E1E1, stop: 0.4 #DDDDDD,
+                                 stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);
+}
+QLineEdit
+{
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                 stop: 0 #E1E1E1, stop: 0.4 #e5e5e5,
+                                 stop: 0.5 #e9e9e9, stop: 1.0 #d2d2d2);
+}
+QPushButton
+{
+background: #D8D8D8;
+}
+    """       
 
 if __name__ == '__main__':
 
