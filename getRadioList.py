@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-##############
 """
 made in October 2019 by Axel Schneider
 https://github.com/Axel-Erfurt/
@@ -8,7 +7,7 @@ Credits: André P. Santos (andreztz) for pyradios
 https://github.com/andreztz/pyradios
 Copyright (c) 2018 André P. Santos
 radio-browser
-http://www.radio-browser.info/gui/#!/api
+https://www.radio-browser.info/#!/
 """
 ##############
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QComboBox, 
@@ -17,7 +16,6 @@ from PyQt5.QtGui import QIcon, QTextCursor, QTextOption
 from PyQt5.QtCore import Qt, QUrl
 from radios import RadioBrowser
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-#from PyQt5.Qt import QClipboard
 from urllib import request
 import requests
 
@@ -150,9 +148,7 @@ class MainWindow(QMainWindow):
     ### QPlainTextEdit contextMenu
     def contextMenuRequested(self, point):
         cmenu = QMenu()
-#        cmenu = self.field.createStandardContextMenu()
         if not self.field.toPlainText() == "":
-#            cmenu.addSeparator()
             cmenu.addAction(self.getNameAction)
             cmenu.addAction(self.getUrlAction)
             cmenu.addAction(self.getNameAndUrlAction)
@@ -168,15 +164,7 @@ class MainWindow(QMainWindow):
         tc = self.field.textCursor()
         rtext = tc.selectedText().partition(",")[2]
         stext = tc.selectedText().partition(",")[0]
-#        print(rtext)
-        if rtext.endswith(".pls") :
-            url = self.getURLfromPLS(rtext)
-        elif rtext.endswith(".m3u") :
-            url = self.getURLfromM3U(rtext)
-        elif rtext.endswith(".m3u8") :
-            url = self.getURLfromM3U(rtext)
-        else:
-            url = rtext
+        url = rtext
         print("stream url=", url)
         self.player.setMedia(QMediaContent(QUrl(url)))
         self.player.play()
@@ -191,38 +179,12 @@ class MainWindow(QMainWindow):
                 if not trackInfo2 == None:
                    self.statusBar().showMessage("%s %s" % (trackInfo, trackInfo2))
 
-    def getURLfromPLS(self, inURL):
-        response = requests.get(inURL)
-        html = response.text.replace("https", "http").splitlines()
-        playlist = []
-
-        for line in html:
-
-            if line.startswith("File") == True:
-                    list = line.split("=", 1)
-                    playlist.append(list[1])
-
-        print("URL:", playlist[0])
-        return(playlist[0])
-
-    def getURLfromM3U(self, inURL):
-        response = requests.get(inURL)
-        html = response.text.replace("https", "http").splitlines()
-        playlist = []
-
-        for line in html:
-            if not line.startswith("#") and len(line) > 0 and line.startswith("http"):
-                playlist.append(line)
-
-        print("URL:", playlist[0])
-        return(playlist[0])
-
     def findStations(self):
         self.field.setPlainText("")
         mysearch = self.findfield.text()
         self.statusBar().showMessage("searching ...")
         rb = RadioBrowser()
-        myparams = {'name': 'search', 'nameExact': 'false'}
+        myparams = {'name': 'search', 'nameExact': 'false', 'bitrateMin': 64}
         
         for key in myparams.keys():
                 if key == "name":
@@ -236,16 +198,15 @@ class MainWindow(QMainWindow):
             for key,value in r[i].items():
                 if str(key) == "name":
                     n = value.replace(",", " ")
-        #            print (n)
-                if str(key) == "url":
+                if str(key) == "url_resolved":
                     m = value
-                    self.field.appendPlainText("%s,%s" % (n, m))
-#        self.combo.setCurrentIndex(0)
+            if not n == "" and not m == "":
+                self.field.appendPlainText("%s,%s" % (n, m.replace('\n', '')))
+                
         if not self.field.toPlainText() == "":
             self.statusBar().showMessage("found "+ str(self.field.toPlainText().count('\n')+1) + " '" + self.findfield.text() + "' Stations")
         else:
             self.statusBar().showMessage("nothing found", 0)
-#        self.field.textCursor().movePosition(QTextCursor.Start, Qt.MoveAnchor)
 
     def saveStations(self):
         if not self.field.toPlainText() == "":
