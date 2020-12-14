@@ -16,7 +16,6 @@ see context menu for more
 ### Credits: 
 André P. Santos (andreztz) for [pyradios](https://github.com/andreztz/pyradios)
 
-radio-browser
-http://www.radio-browser.info/gui/
+[radio-browser](https://www.radio-browser.info/#!/)
 
 ![alt screenshot](https://github.com/Axel-Erfurt/getRadioList/blob/master/screenshot.png)
