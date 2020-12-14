@@ -1,5 +1,5 @@
 # getRadioList
-get a list of radio stations by searching [radio-browser](http://www.radio-browser.info/gui/)
+get a list of radio stations by searching [radio-browser](https://www.radio-browser.info/#!/)
 
 - added playing
 
