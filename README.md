@@ -19,3 +19,9 @@ André P. Santos (andreztz) for [pyradios](https://github.com/andreztz/pyradios)
 [radio-browser](https://www.radio-browser.info/#!/)
 
 ![alt screenshot](https://github.com/Axel-Erfurt/getRadioList/blob/master/screenshot.png)
+
+- _**getRadioListWeb.py**_ 
+
+Version using QWebEngineView
+
+![alt screenshot](https://github.com/Axel-Erfurt/getRadioList/blob/master/screenshotWeb.png)
