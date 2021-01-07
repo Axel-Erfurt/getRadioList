@@ -11,7 +11,7 @@ https://www.radio-browser.info/#!/
 """
 ##############
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QComboBox, 
-                                                            QPushButton, QFileDialog, QAction, QMenu, QMessageBox)
+                              QPushButton, QFileDialog, QAction, QMenu, QMessageBox, QSlider)
 from PyQt5.QtGui import QIcon, QTextCursor, QTextOption
 from PyQt5.QtCore import Qt, QUrl
 from radios import RadioBrowser
@@ -59,6 +59,13 @@ class MainWindow(QMainWindow):
         self.field.customContextMenuRequested.connect(self.contextMenuRequested)
         self.field.cursorPositionChanged.connect(self.selectLine)
         self.field.setWordWrapMode(QTextOption.NoWrap)
+        ### volume slider
+        self.volSlider = QSlider()
+        self.volSlider.setFixedWidth(100)
+        self.volSlider.setOrientation(Qt.Horizontal)
+        self.volSlider.valueChanged.connect(self.setVolume)
+        self.volSlider.setMinimum(0)
+        self.volSlider.setMaximum(100)
         ### genre box
         self.combo = QComboBox()
         self.combo.currentIndexChanged.connect(self.comboSearch)
@@ -71,11 +78,6 @@ class MainWindow(QMainWindow):
         self.tb = self.addToolBar("tools")
         self.tb.setContextMenuPolicy(Qt.PreventContextMenu)
         self.tb.setMovable(False)
-#        self.tb.setContentMargins(0, #0, 0, 6)
-        #self.setStyleSheet("QPlainTextEdit {background: #e9e9e9; font-size: 8pt; border: 1px outset #babdb6;} \
-        #                                                           QStatusBar { background: transparent; color: #888a85; border: 0px; font-size: 8pt;}QToolBar \
-        #                                                            {background: transparent; border: 0px;} QPushButton{background: #d3d7cf; \
-        #                                                                    font-size: 8pt;} QLineEdit{background: #eeeeec; font-size: 8pt;}")
         self.saveButton = QPushButton("Save as txt")
         self.saveButton.setIcon(QIcon.fromTheme("document-save"))
         self.saveButton.clicked.connect(self.saveStations)
@@ -97,6 +99,7 @@ class MainWindow(QMainWindow):
         self.stopButton = QPushButton("Stop")
         self.stopButton.setIcon(QIcon.fromTheme("media-playback-stop"))
         self.stopButton.clicked.connect(self.stopPlayer)
+        self.statusBar().addPermanentWidget(self.volSlider)
         self.statusBar().addPermanentWidget(self.startButton)
         self.statusBar().addPermanentWidget(self.stopButton)
         ## actions
@@ -109,7 +112,13 @@ class MainWindow(QMainWindow):
         self.addAction(self.stopPlayerAction)
         self.helpAction = QAction(QIcon.fromTheme("help-info"), "Help", self, shortcut="F1", triggered=self.showHelp)
         self.addAction(self.helpAction)
+        
+        self.getForWebAction = QAction(QIcon.fromTheme("browser"), "copy for WebPlayer", self, triggered=self.getForWeb)
+        self.volSlider.setValue(60)
         self.statusBar().showMessage("Welcome", 0)
+        
+    def setVolume(self):
+        self.player.setVolume(self.volSlider.value())
 
     def comboSearch(self):
         if self.combo.currentIndex() > 0:
@@ -130,6 +139,14 @@ class MainWindow(QMainWindow):
         t = self.field.textCursor().selectedText()
         clip = QApplication.clipboard()
         clip.setText(t)
+        
+    def getForWeb(self):
+        t = self.field.textCursor().selectedText()
+        name = t.partition(",")[0]
+        url = t.partition(",")[2]
+        result = f"<li><a class='chlist' href='{url}'>{name}</a></li>"
+        clip = QApplication.clipboard()
+        clip.setText(result)
         
     def selectLine(self):
         tc = self.field.textCursor()
@@ -157,6 +174,7 @@ class MainWindow(QMainWindow):
             cmenu.addAction(self.stopPlayerAction)
             cmenu.addSeparator()
             cmenu.addAction(self.helpAction)
+            cmenu.addAction(self.getForWebAction)
         cmenu.exec_(self.field.mapToGlobal(point))  
 
     def getURLtoPlay(self):
