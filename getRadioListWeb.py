@@ -3,11 +3,8 @@
 """
 made in October 2019 by Axel Schneider
 https://github.com/Axel-Erfurt/
-Credits: André P. Santos (andreztz) for pyradios
-https://github.com/andreztz/pyradios
-Copyright (c) 2018 André P. Santos
 radio-browser
-https://www.radio-browser.info/#!/
+https://de1.api.radio-browser.info/
 """
 ##############
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QComboBox, 
@@ -15,7 +12,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QLineEdit, QComboBox,
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QUrl, QFileInfo
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from radios import RadioBrowser
+import requests
+import xml.etree.ElementTree as ET
 from os import linesep
 
 genres ="""Acoustic
@@ -32,7 +30,7 @@ Country
 New Country
 Classic Country
 Country Rock
-Cowboy / Western
+Western
 Classic Rock
 Classic
 Beat
@@ -128,7 +126,7 @@ html_top = """<!DOCTYPE html>
   <body>
     <div id='player'>
       <audio autoplay controls='' id='audio' preload='none' tabindex='0'>
-        <source id="primarysrc" src='none' /></audio>
+        <source id="primarysrc" src=''></audio>
     </div>
     <div id="test">
       <input class="customSearch search" type="search" placeholder="find ..." />
@@ -200,29 +198,42 @@ class MainWindow(QMainWindow):
     def findStations(self):
         html_content = html_top
         self.field = ""
-        mysearch = self.findfield.text()
+        my_value = self.findfield.text()
         self.statusBar().showMessage("searching ...")
-        rb = RadioBrowser()
-        myparams = {'name': 'search', 'nameExact': 'false', 'bitrateMin': 64}
-        
-        for key in myparams.keys():
-                if key == "name":
-                    myparams[key] = mysearch
-        
-        r = rb.station_search(params=myparams)
-        
-        n = ""
-        m = ""
-        for i in range(len(r)):
-            for key,value in r[i].items():
-                if str(key) == "name":
-                    n = value.replace(",", " ")
-                if str(key) == "url_resolved":
-                    m = value
-            if not n == "" and not m == "":
-                self.field += ("%s,%s" % (n, m.replace('\n', '')))
-                self.field += '\n'
+        base_url = "https://de1.api.radio-browser.info/xml/stations/byname/"
+        url = f"{base_url}{my_value}"
+        xml = requests.get(url).content.decode()
+        if xml:
+            root = ET.fromstring(xml)
 
+            for child in root:
+                ch_name = child.attrib["name"]
+                ch_url = child.attrib["url"]
+                self.field += (f"{ch_name},{ch_url}")
+                self.field += '\n'
+#        mysearch = self.findfield.text()
+#        self.statusBar().showMessage("searching ...")
+#        rb = RadioBrowser()
+#        myparams = {'name': 'search', 'nameExact': 'false', 'bitrateMin': 64}
+#        
+#        for key in myparams.keys():
+#                if key == "name":
+#                    myparams[key] = mysearch
+#        
+#        r = rb.station_search(params=myparams)
+#        
+#        n = ""
+#        m = ""
+#        for i in range(len(r)):
+#            for key,value in r[i].items():
+#                if str(key) == "name":
+#                    n = value.replace(",", " ")
+#                if str(key) == "url_resolved":
+#                    m = value
+#            if not n == "" and not m == "":
+#                self.field += ("%s,%s" % (n, m.replace('\n', '')))
+#                self.field += '\n'
+#
         text = linesep.join([s for s in self.field.splitlines() if s]).splitlines()
                 
         if not len(text) == 0:
@@ -339,3 +350,4 @@ if __name__ == '__main__':
     mainWin.show()
     mainWin.findfield.setFocus()
     sys.exit(app.exec_())
+    
