@@ -3,21 +3,17 @@
 """
 made in October 2019 by Axel Schneider
 https://github.com/Axel-Erfurt/
-Credits: André P. Santos (andreztz) for pyradios
-https://github.com/andreztz/pyradios
-Copyright (c) 2018 André P. Santos
 radio-browser
-https://www.radio-browser.info/#!/
+https://de1.api.radio-browser.info/
 """
 ##############
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QComboBox, 
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QLineEdit, QComboBox, QScrollBar, 
                               QPushButton, QFileDialog, QAction, QMenu, QMessageBox, QSlider)
 from PyQt5.QtGui import QIcon, QTextCursor, QTextOption
 from PyQt5.QtCore import Qt, QUrl
-from radios import RadioBrowser
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from urllib import request
 import requests
+import xml.etree.ElementTree as ET
 
 genres ="""Acoustic
 Bluegrass 
@@ -25,7 +21,7 @@ Country
 New Country
 Classic Country
 Country Rock
-Cowboy / Western
+Western
 Folk
 Folk Rock
 Grunge
@@ -199,32 +195,31 @@ class MainWindow(QMainWindow):
 
     def findStations(self):
         self.field.setPlainText("")
-        mysearch = self.findfield.text()
+        my_value = self.findfield.text()
         self.statusBar().showMessage("searching ...")
-        rb = RadioBrowser()
-        myparams = {'name': 'search', 'nameExact': 'false', 'bitrateMin': 64}
-        
-        for key in myparams.keys():
-                if key == "name":
-                    myparams[key] = mysearch
-        
-        r = rb.station_search(params=myparams)
-        
-        n = ""
-        m = ""
-        for i in range(len(r)):
-            for key,value in r[i].items():
-                if str(key) == "name":
-                    n = value.replace(",", " ")
-                if str(key) == "url_resolved":
-                    m = value
-            if not n == "" and not m == "":
-                self.field.appendPlainText("%s,%s" % (n, m.replace('\n', '')))
+        base_url = "https://de1.api.radio-browser.info/xml/stations/byname/"
+        url = f"{base_url}{my_value}"
+        xml = requests.get(url).content.decode()
+        if xml:
+            root = ET.fromstring(xml)
+
+            for child in root:
+                ch_name = child.attrib["name"]
+                ch_url = child.attrib["url"]
+                self.field.appendPlainText(f"{ch_name},{ch_url}")    
+                self.copyToClipboard()
                 
-        if not self.field.toPlainText() == "":
-            self.statusBar().showMessage("found "+ str(self.field.toPlainText().count('\n')+1) + " '" + self.findfield.text() + "' Stations")
+                tc = self.field.textCursor()
+                tc.movePosition(QTextCursor.Start, QTextCursor.MoveAnchor)
+                tc.select(QTextCursor.LineUnderCursor)
+                tc.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
+                self.field.setTextCursor(tc)
+                
         else:
             self.statusBar().showMessage("nothing found", 0)
+            
+        self.field.verticalScrollBar().triggerAction(QScrollBar.SliderToMinimum)
+        self.field.horizontalScrollBar().triggerAction(QScrollBar.SliderToMinimum)
 
     def saveStations(self):
         if not self.field.toPlainText() == "":
@@ -256,6 +251,11 @@ class MainWindow(QMainWindow):
                     f.write(result)
                     f.close()
                     self.statusBar().showMessage("saved!", 0)
+                    
+    def copyToClipboard(self):
+        clip = QApplication.clipboard()
+        if not self.field.toPlainText() == "":
+            clip.setText(self.field.toPlainText())
 
 def myStyleSheet(self):
     return """
