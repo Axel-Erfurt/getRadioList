@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 made in October 2019 by Axel Schneider
@@ -130,6 +130,22 @@ class MainWindow(QMainWindow):
         t = self.field.textCursor().selectedText().partition(",")[2]
         clip = QApplication.clipboard()
         clip.setText(t)
+        
+    def get_url_from_m3u(self, inURL):
+        print("checking", inURL)
+        response = requests.get(inURL)
+        html = response.text.replace("https", "http").splitlines()
+        playlist = []
+
+        for line in html:
+            if not line.startswith("#") and len(line) > 0 and line.startswith("http"):
+                playlist.append(line)
+
+        if len(playlist) > 0:
+            print("URL:", playlist[0])
+            return(playlist[0])
+        else:
+            print("error getting stream url")
 
     def getNameAndUrl(self):
         t = self.field.textCursor().selectedText()
@@ -179,6 +195,11 @@ class MainWindow(QMainWindow):
         rtext = tc.selectedText().partition(",")[2]
         stext = tc.selectedText().partition(",")[0]
         url = rtext
+        
+        if url.endswith(".m3u"):
+            url = self.get_url_from_m3u(url)
+            
+        
         print("stream url=", url)
         self.player.setMedia(QMediaContent(QUrl(url)))
         self.player.play()
